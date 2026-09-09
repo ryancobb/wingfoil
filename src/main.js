@@ -210,4 +210,4 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 // Explicit opt-in diagnostics for browser verification, absent in normal sessions.
-if (new URLSearchParams(location.search).has('debug')) window.__drift = { sim, input, getState: () => ({ started, paused, lesson, gates }) };
+if (new URLSearchParams(location.search).has('debug')) window.__drift = { sim, input, graphics: scene.inspect, getState: () => ({ started, paused, lesson, gates }) };

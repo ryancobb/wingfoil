@@ -4,10 +4,14 @@ test('desktop riding, keyboard, pause, equipment settings and reset', async ({ p
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto('/?debug');
   await page.getByRole('button', { name: "Let's ride" }).click();
-  await page.keyboard.down('KeyE'); await page.waitForTimeout(500); await page.keyboard.up('KeyE');
+  await page.keyboard.down('KeyE');
+  await expect.poll(() => page.evaluate(() => window.__drift.input.trim)).toBeGreaterThan(.45);
+  await page.keyboard.up('KeyE');
   expect(await page.evaluate(() => window.__drift.input.trim)).toBeGreaterThan(.45);
   const heading = await page.evaluate(() => window.__drift.sim.heading);
-  await page.keyboard.down('KeyD'); await page.waitForTimeout(500); await page.keyboard.up('KeyD');
+  await page.keyboard.down('KeyD');
+  await expect.poll(() => page.evaluate(() => window.__drift.sim.heading)).toBeGreaterThan(heading);
+  await page.keyboard.up('KeyD');
   expect(await page.evaluate(() => window.__drift.sim.heading)).toBeGreaterThan(heading);
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   const time = await page.evaluate(() => window.__drift.sim.time);
