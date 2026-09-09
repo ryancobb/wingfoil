@@ -102,7 +102,7 @@ export function createWaterEffects(scene) {
         ripple(sim.x, sim.z, Math.min(1, impact / 2)); bursts++; burstCooldown = .22; impactArmed = false;
       }
       if (speed > .7) {
-        budget += dt * Math.min(280, speed * (5 + hull * 19) + carve * 25);
+        budget += dt * Math.min(280, speed * (7 + hull * 19) + carve * 25);
         while (budget >= 1) { emit(sim, hull, impact * .5); budget--; }
       } else budget = 0;
       for (let i = 0; i < PARTICLES; i++) {

@@ -71,6 +71,15 @@ export function createOcean(scene) {
         float fragments=smoothstep(.44,.65,noise(p*.85+vec2(-t*.12,t*.06)));
         float nearFade=exp(-dist*.008)*(1.-smoothstep(100.,250.,dist));
         float foam=crestLine*front*fragments*nearFade*clamp(uChop,0.,1.)*.55;
+        // Small, slowly drifting foam flecks provide nearby distance cues.
+        // World coordinates make them pass the board at its actual speed.
+        vec2 fleckP=p-windDir*t*.12;
+        float flecks=noise(fleckP*vec2(4.8,7.2))*.7+noise(fleckP*13.7)*.3;
+        float fleckAA=max(fwidth(flecks),.015);
+        float fleckMask=smoothstep(.7-fleckAA,.7+fleckAA,flecks);
+        float patches=smoothstep(.48,.7,noise(fleckP*.32));
+        float fleckFade=(1.-smoothstep(12.,48.,dist))/(1.+fleckAA*12.);
+        foam+=fleckMask*patches*fleckFade*.26*smoothstep(2.,9.,uWind);
         color=mix(color,uFoam,foam);
         color=mix(color,uSky,gust*nearFade*.055);
         float sunAlignment=max(dot(reflect(-uSun,n),view),0.);
@@ -104,20 +113,22 @@ export function createOcean(scene) {
   const far = new THREE.Mesh(new THREE.ShapeGeometry(outerShape), material); far.rotation.x = -Math.PI / 2; scene.add(far);
 
   const count = 120, samples = Array.from({ length: count }, () => ({ x: 0, z: 0, dx: 0, dz: 0, born: -100, hull: 1, speed: 0 }));
-  const wakePositions = new Float32Array(count * 4 * 3), wakeUV = new Float32Array(count * 4 * 2), wakeAge = new Float32Array(count * 4), wakeIndex = [];
+  const wakePositions = new Float32Array(count * 4 * 3), wakeUV = new Float32Array(count * 4 * 2), wakeAge = new Float32Array(count * 4), wakeStrength = new Float32Array(count * 4), wakeIndex = [];
   for (let i = 0; i < count; i++) {
     wakeUV.set([0, 0, 1, 0, 0, 1, 1, 1], i * 8);
     const k = i * 4; wakeIndex.push(k, k + 1, k + 2, k + 2, k + 1, k + 3);
   }
   const wakeGeo = new THREE.BufferGeometry(); wakeGeo.setAttribute('position', new THREE.BufferAttribute(wakePositions, 3)); wakeGeo.setAttribute('uv', new THREE.BufferAttribute(wakeUV, 2)); wakeGeo.setAttribute('age', new THREE.BufferAttribute(wakeAge, 1)); wakeGeo.setIndex(wakeIndex);
+  wakeGeo.setAttribute('strength', new THREE.BufferAttribute(wakeStrength, 1));
   const wakeMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { time: uniforms.uTime },
-    vertexShader: `attribute float age; varying vec2 vUv; varying vec3 vWorld; varying float vAge; void main(){vUv=uv;vWorld=position;vAge=age;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-    fragmentShader: `${noiseGLSL} uniform float time; varying vec2 vUv; varying vec3 vWorld; varying float vAge;
+    vertexShader: `attribute float age,strength; varying vec2 vUv; varying vec3 vWorld; varying float vAge,vStrength; void main(){vUv=uv;vWorld=position;vAge=age;vStrength=strength;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader: `${noiseGLSL} uniform float time; varying vec2 vUv; varying vec3 vWorld; varying float vAge,vStrength;
       void main(){vec2 p=vUv*2.-1.; float edge=1.-smoothstep(.5,1.,abs(p.x));
         float bubbles=smoothstep(.25,.65,noise(vWorld.xz*9.+vec2(time*.2,0.)));
         float filaments=smoothstep(.38,.62,noise(vWorld.xz*3.-time*.12));
-        float alpha=edge*(1.-p.y*p.y)*mix(bubbles,filaments,.35)*max(0.,1.-vAge)*.65;
+        float core=exp(-p.x*p.x*22.)*(1.-smoothstep(0.,.5,vAge));
+        float alpha=edge*(1.-p.y*p.y)*(mix(bubbles,filaments,.35)+core*.4)*max(0.,1.-vAge)*vStrength;
         gl_FragColor=vec4(.8,1.,.96,alpha);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -150,9 +161,10 @@ export function createOcean(scene) {
           const x = s.x - s.dz * side * width + s.dx * along * length, z = s.z + s.dx * side * width + s.dz * along * length;
           const k = i * 4 + j;
           wakePositions[k * 3] = x; wakePositions[k * 3 + 1] = wave(x, z, sim.time, sim.settings.chop) + .025; wakePositions[k * 3 + 2] = z; wakeAge[k] = age / 5;
+          wakeStrength[k] = .5 + THREE.MathUtils.smoothstep(s.speed, 2, 12) * .4;
         }
       }
-      wakeGeo.attributes.position.needsUpdate = true; wakeGeo.attributes.age.needsUpdate = true;
+      wakeGeo.attributes.position.needsUpdate = true; wakeGeo.attributes.age.needsUpdate = true; wakeGeo.attributes.strength.needsUpdate = true;
       effects.update(sim, dt, pixelRatio, viewportHeight);
     },
   };

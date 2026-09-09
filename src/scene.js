@@ -32,7 +32,7 @@ export function createScene(container) {
     const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.25, .5, 12, 2).translate(.625, 0, 0), surfaceMaterial('#ffb92e', { side: THREE.DoubleSide, roughness: .8 }));
     flag.position.set(0, 2.85, 0); buoy.add(flag); flags.push(flag);
   }
-  let mode = 0, initialized = false, previousTime = 0;
+  let mode = 0, initialized = false, previousTime = 0, speedFeel = 0;
   const smoothTarget = new THREE.Vector3(), desiredCamera = new THREE.Vector3(), desiredTarget = new THREE.Vector3();
   const forward = new THREE.Vector3(), right = new THREE.Vector3();
   function resize() {
@@ -52,15 +52,19 @@ export function createScene(container) {
       forward.set(Math.sin(sim.heading), 0, -Math.cos(sim.heading)); right.set(Math.cos(sim.heading), 0, Math.sin(sim.heading));
       const shortLandscape = container.clientHeight <= 570 && camera.aspect > 1;
       const compactPortrait = container.clientHeight <= 620 && camera.aspect < 1;
+      // Ease into a lower, closer view over the takeoff-to-fast-flight range.
+      // Keep this on simulation time so the camera also freezes when paused.
+      const speedTarget = THREE.MathUtils.smoothstep(sim.telemetry.speed || 0, 1.5, 12);
+      speedFeel += (speedTarget - speedFeel) * (initialized ? 1 - Math.exp(-dt * 2.5) : 1);
       const back = mode === 2 ? 6.5 : mode === 1 ? 5.5 : shortLandscape ? 7.6 : compactPortrait ? 13.5 : 11.2;
       const side = mode === 1 ? (shortLandscape ? 7 : 10) : mode === 2 ? 2.5 : shortLandscape ? 3.2 : 4.5;
-      desiredCamera.copy(rig.root.position).addScaledVector(forward, -back).addScaledVector(right, side);
-      desiredCamera.y = sim.y + (mode === 2 ? 2.5 : shortLandscape ? 2.9 : 3.7);
-      desiredTarget.copy(rig.root.position).addScaledVector(forward, mode === 2 ? 1.4 : .6);
+      desiredCamera.copy(rig.root.position).addScaledVector(forward, -back * (1 - speedFeel * .32)).addScaledVector(right, side * (1 - speedFeel * .28));
+      desiredCamera.y = sim.y + (mode === 2 ? 2.5 : shortLandscape ? 2.9 : 3.7) - speedFeel * (mode === 2 || shortLandscape ? .8 : 1.35);
+      desiredTarget.copy(rig.root.position).addScaledVector(forward, (mode === 2 ? 1.4 : .6) + speedFeel * .8);
       desiredTarget.y = sim.y + (compactPortrait ? 1.05 : shortLandscape ? .98 : camera.aspect < 1 ? .85 : .3);
       const ease = initialized ? 1 - Math.exp(-dt * 3) : 1;
       camera.position.lerp(desiredCamera, ease); smoothTarget.lerp(desiredTarget, ease); camera.lookAt(smoothTarget); initialized = true;
-      const speedFov = 49 + Math.min(6, (sim.telemetry.speed || 0) * .45);
+      const speedFov = 49 + speedFeel * 20;
       camera.fov += (speedFov - camera.fov) * ease; camera.updateProjectionMatrix();
       lighting.update(sim); environment.update(sim, camera); ocean.update(sim, camera.position, dt, renderer.getPixelRatio(), container.clientHeight); wind.update(sim, camera, dt, showWind);
       const flutter = flagAnimation.update(sim.time, sim.telemetry.wind || 0, dt);
