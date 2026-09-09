@@ -1,0 +1,138 @@
+/* Mobile riding uses the center for the ocean and the corners for thumbs. */
+.depower-button #flag-label { font-size: inherit; opacity: 1; }
+.ride-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
+.ride-actions button { min-height: 48px; border: 1px solid #bed8c35c; border-radius: 9px; background: #254f51; font-size: 14px; }
+.touch-settings { padding: 0; border: 0; margin: 24px 0; }
+.touch-settings legend { font-size: 16px; font-weight: 600; }
+.touch-settings label { margin-top: 15px; }
+.menu-mission { margin-top: 18px; padding: 14px; border-radius: 10px; background: #0b2a303d; font-size: 14px; line-height: 1.5; }
+
+@media (max-width: 700px), (max-height: 570px) and (orientation: landscape), (pointer: coarse) and (max-width: 1100px) {
+  #app { --edge-left: max(16px, env(safe-area-inset-left)); --edge-right: max(16px, env(safe-area-inset-right)); --edge-bottom: max(12px, env(safe-area-inset-bottom)); --controls-height: 216px; }
+  header { top: max(10px, env(safe-area-inset-top)); left: var(--edge-left); right: var(--edge-right); height: 48px; gap: 12px; }
+  .brand { font-size: 29px; min-height: 48px; }
+  .brand-mark { font-size: 35px; }
+  .header-actions { gap: 10px; }
+  .icon-button, .view-actions .icon-button { width: 48px; height: 48px; background: #183f47d9; border-color: #c5ddca69; }
+  .icon-button svg { width: 23px; height: 23px; }
+  .session-label, .location, #help, .view-actions, .objective, footer, .key-hint, .desktop-tip, .control-caption { display: none; }
+  .vignette { background: linear-gradient(180deg, #15363eaa, #15363e55 130px, transparent 220px, transparent 58%, #102f37d9 83%, #102f37f5); }
+  .telemetry { top: calc(max(10px, env(safe-area-inset-top)) + 66px); left: var(--edge-left); bottom: auto; transform: none; min-width: 0; width: calc(100% - var(--edge-left) - var(--edge-right) - 130px); display: flex; align-items: center; justify-content: flex-start; gap: 15px; text-align: left; }
+  .speed { gap: 5px; }
+  .speed > span:first-child { font-size: 36px; line-height: 1.1; letter-spacing: -1.8px; }
+  .speed > span:last-child { font-size: 11px; color: #f0f4e9; }
+  .metrics { display: none; margin: 0; gap: 0; }
+  .metrics > div { gap: 3px; }
+  .metrics > div:not(:first-child) { display: none; }
+  .metrics .eyebrow { font-size: 10px; letter-spacing: .4px; white-space: nowrap; color: #e1ecdc; }
+  .metrics strong { font-size: 21px; }
+  .metrics small { font-size: 12px; color: #f0f4e9; }
+  .status { position: absolute; top: calc(100% + 8px); left: 0; right: auto; margin: 0; font-size: 10px; letter-spacing: .6px; justify-content: flex-start; white-space: nowrap; }
+  .wind-card { top: calc(max(10px, env(safe-area-inset-top)) + 65px); right: var(--edge-right); width: 114px; padding: 0; border: 0; background: none; backdrop-filter: none; }
+  .wind-card > .eyebrow { font-size: 10px; letter-spacing: .8px; }
+  .wind-reading { margin: 3px 0 0; gap: 5px; }
+  .wind-reading > span:first-child { font-size: 29px; letter-spacing: -1px; }
+  .wind-card .unit { font-size: 11px; color: #eff4e9; }
+  .wind-arrow { width: 25px; height: 25px; }
+  .wind-card .small-row, .wind-card .card-rule, .wind-spark, .wind-card > .muted { display: none; }
+  .foil-monitor { display: block; top: calc(max(10px, env(safe-area-inset-top)) + 145px); left: var(--edge-left); bottom: auto; width: 158px; padding: 10px 12px; border-color: #c8e8db55; background: #173c43b8; }
+  .foil-monitor .eyebrow { font-size: 10px; letter-spacing: .7px; }
+  .foil-monitor .eyebrow span { font-size: 10px; color: #e3eddb; }
+  .foil-track { margin-top: 14px; height: 5px; }
+  .foil-labels { font-size: 9px; color: #dfebd7; }
+  .controls { left: var(--edge-left); right: var(--edge-right); bottom: var(--edge-bottom); width: auto; height: var(--controls-height); transform: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 158px 48px; column-gap: 24px; row-gap: 10px; align-items: start; }
+  .steering-control { grid-column: 1; grid-row: 1; width: 100%; min-width: 0; }
+  .control-heading { font-size: 12px; line-height: 18px; letter-spacing: .5px; color: #f0f4e9; }
+  .control-heading strong { font-size: 14px; }
+  .pad-area { padding: 18px 0 0; height: 140px; }
+  .pad-label { font-size: 9px; letter-spacing: .7px; color: #e5efdf; }
+  .pad-label.top { top: 3px; }
+  .pad-label.bottom { bottom: -6px; padding: 0 4px; background: #183c40; border-radius: 4px; }
+  #joystick { width: 122px; height: 122px; background: #183d43ad; border: 1px solid #d5e6c975; }
+  #stick { width: 52px; height: 52px; background: radial-gradient(circle at 30% 20%, #dfebce9c, #739e858c); border-color: #e4eed2; }
+  .pad-ring { inset: 18px; border-color: #d9e7ce55; }
+  .pad-left, .pad-right { font-size: 26px; color: #e6efdc; }
+  .center-controls { grid-column: 1; grid-row: 2; position: static; width: 100%; padding: 0; transform: none; align-self: start; }
+  .pump-button { width: 100%; height: 48px; margin: 0; padding: 0 12px; font-size: 14px; border-radius: 10px; letter-spacing: .6px; }
+  .pump-button span { display: none; }
+  .energy { width: calc(100% - 22px); height: 3px; margin: 4px auto 0; }
+  .wing-control { grid-column: 2; grid-row: 1 / span 2; width: 100%; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; height: 100%; }
+  .trim-scale { font-size: 9px; line-height: 12px; letter-spacing: .2px; margin-top: 8px; color: #e1eddb; }
+  .slider-wrap { height: 48px; }
+  #trim { height: 48px; background: transparent !important; }
+  #trim::-webkit-slider-runnable-track { height: 6px; border-radius: 4px; background: linear-gradient(to right, #c5e6b9 var(--fill, 38%), #56796b var(--fill, 38%)); }
+  #trim::-webkit-slider-thumb { width: 34px; height: 34px; margin-top: -14px; border: 3px solid #a5c39e; background: #f1f0da; }
+  #trim::-moz-range-track { height: 6px; border-radius: 4px; background: #779a81; }
+  #trim::-moz-range-thumb { width: 28px; height: 28px; border: 3px solid #a5c39e; background: #f1f0da; }
+  #sweet-spot { top: 13px; height: 22px; width: 24px; border: 2px solid #c3efa8; z-index: 2; }
+  #sweet-spot:before { top: -7px; }
+  .trim-feedback { min-height: 24px; font-size: 11px; line-height: 1.25; color: #e3eddb; gap: 5px; }
+  .sweet-dot { width: 6px; height: 6px; flex-shrink: 0; }
+  .depower-button { min-height: 48px; margin-top: auto; padding: 0 8px; display: flex; justify-content: center; align-items: center; border: 1px solid #d2e6cd80; border-radius: 10px; background: #20464a; font-size: 13px; letter-spacing: .2px; }
+  .depower-button #flag-label { display: inline; }
+  .depower-button.held { background: #edc79a; color: #243c39; }
+  .coach { left: var(--edge-left); right: var(--edge-right); bottom: calc(var(--edge-bottom) + var(--controls-height) + 14px); width: auto; max-width: none; transform: none; min-height: 34px; margin: 0; padding: 5px 7px; border-radius: 8px; background: #173b42cf; font-size: 12px; line-height: 1.4; color: #f1f3e6; white-space: normal; text-align: center; }
+  .coach-dot { flex-shrink: 0; width: 5px; height: 5px; }
+  #app.swapped .steering-control, #app.swapped .center-controls { grid-column: 2; }
+  #app.swapped .wing-control { grid-column: 1; }
+  .overlay { padding: max(12px, env(safe-area-inset-top)) var(--edge-right) max(12px, env(safe-area-inset-bottom)) var(--edge-left); }
+  .modal { padding: 24px; max-width: 460px; max-height: 100%; overflow-y: auto; }
+  .modal h2 { font-size: 28px; }
+  .modal .eyebrow { font-size: 10px; }
+  .modal > p, .lesson-list p { font-size: 14px; line-height: 1.55; }
+  .lesson-list { gap: 16px; margin: 20px 0; }
+  .lesson-list strong { font-size: 15px; }
+  .lesson-list > div > span { font-size: 12px; }
+  .intro-note { font-size: 12px; line-height: 1.5; }
+  .primary-button { min-height: 48px; font-size: 16px; }
+  dialog { width: 460px; max-width: calc(100% - var(--edge-left) - var(--edge-right)); max-height: calc(100dvh - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))); padding: 24px; }
+  dialog label { font-size: 15px; }
+  dialog output { font-size: 14px; }
+  dialog input[type=range] { height: 44px; margin: 4px 0; background: transparent; }
+  dialog input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 5px; background: #709783; }
+  dialog input[type=range]::-webkit-slider-thumb { width: 30px; height: 30px; margin-top: -12px; }
+  dialog input[type=range]::-moz-range-track { height: 6px; background: #709783; }
+  dialog input[type=range]::-moz-range-thumb { width: 24px; height: 24px; }
+  dialog select { min-height: 48px; font-size: 16px; }
+  dialog .switch-label { min-height: 48px; }
+  .switch-label input { width: 44px; height: 44px; flex-shrink: 0; }
+  .switch-label small, .physics-note { font-size: 12px; line-height: 1.5; }
+  #session-stats span { font-size: 12px; }
+  #toast { top: calc(max(10px, env(safe-area-inset-top)) + 155px); font-size: 12px; max-width: calc(100% - 32px); white-space: normal; text-align: center; }
+}
+
+@media (max-width: 359px) and (orientation: portrait) {
+  #app { --edge-left: max(10px, env(safe-area-inset-left)); --edge-right: max(10px, env(safe-area-inset-right)); }
+  .controls { column-gap: 14px; }
+  .telemetry { gap: 9px; width: 180px; }
+  .speed > span:first-child { font-size: 30px; }
+  .wind-card { width: 94px; }
+  .wind-reading > span:first-child { font-size: 25px; }
+  .metrics .eyebrow { font-size: 9px; }
+}
+
+@media (max-height: 570px) and (orientation: landscape) {
+  #app { --controls-height: 216px; }
+  header { right: var(--edge-right); }
+  .brand { font-size: 25px; }
+  .telemetry { top: max(13px, env(safe-area-inset-top)); left: 50%; width: auto; transform: translateX(-50%); gap: 22px; }
+  .telemetry .speed > span:first-child { font-size: 30px; }
+  .telemetry .status { font-size: 9px; top: calc(100% + 3px); }
+  .wind-card { top: 76px; right: var(--edge-right); width: 142px; }
+  .wind-reading { position: absolute; right: 0; top: -8px; gap: 4px; }
+  .wind-card > .eyebrow { font-size: 10px; line-height: 26px; }
+  .wind-card > .eyebrow .live-dot, .wind-arrow { display: none; }
+  .wind-reading > span:first-child { font-size: 22px; }
+  .foil-monitor { top: 76px; width: 160px; }
+  .controls { grid-template-columns: 160px 160px; justify-content: space-between; }
+  .coach { left: calc(var(--edge-left) + 178px); right: calc(var(--edge-right) + 178px); bottom: calc(var(--edge-bottom) + 8px); font-size: 12px; min-height: 0; }
+  .modal { max-width: 600px; }
+  .lesson-list { grid-template-columns: 1fr; }
+  #toast { top: 86px; max-width: calc(100% - 380px); }
+}
+@media (max-height: 620px) and (orientation: portrait) and (max-width: 700px) {
+  .coach { display: none; }
+  .foil-monitor { top: calc(max(10px, env(safe-area-inset-top)) + 132px); left: var(--edge-left); right: var(--edge-right); width: auto; padding: 8px 12px; display: grid; grid-template-columns: 102px 1fr; grid-template-rows: 5px 12px; column-gap: 12px; row-gap: 4px; }
+  .foil-monitor .eyebrow { grid-row: 1 / span 2; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; font-size: 9px; }
+  .foil-track, .foil-labels { grid-column: 2; margin: 0; }
+}
