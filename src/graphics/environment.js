@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createIslands } from './islands.js';
 import { SUN_DIRECTION } from './lighting.js';
 
-export function createEnvironment(scene, renderer) {
+export function createEnvironment(scene, renderer, reflectionSize = 128) {
   const skyTime = { value: 0 };
   const sky = new THREE.Mesh(new THREE.SphereGeometry(1250, 32, 20), new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false,
@@ -33,7 +33,7 @@ export function createEnvironment(scene, renderer) {
   // Capture the procedural sky once for roughness-filtered reflections on all gear.
   const reflectionScene = new THREE.Scene(); reflectionScene.add(sky.clone());
   const pmrem = new THREE.PMREMGenerator(renderer);
-  const reflection = pmrem.fromScene(reflectionScene, .025, .1, 1800, { size: 128 });
+  const reflection = pmrem.fromScene(reflectionScene, .025, .1, 1800, { size: reflectionSize });
   scene.environment = reflection.texture; scene.environmentIntensity = .6;
   pmrem.dispose();
   const islands = createIslands(scene);

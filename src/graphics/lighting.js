@@ -4,7 +4,7 @@ import * as THREE from 'three';
 export const SUN_DIRECTION = new THREE.Vector3(.68, .48, -.55).normalize();
 export const SUN_COLOR = new THREE.Color('#fff0cb');
 
-export function createLighting(scene, renderer) {
+export function createLighting(scene, renderer, shadowSize = 1024) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = true;
@@ -12,7 +12,7 @@ export function createLighting(scene, renderer) {
   scene.add(new THREE.HemisphereLight('#d1edff', '#769da8', 1.1));
   const sun = new THREE.DirectionalLight(SUN_COLOR, 3.2);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.mapSize.set(shadowSize, shadowSize);
   Object.assign(sun.shadow.camera, { left: -5, right: 5, top: 5, bottom: -5, near: 1, far: 55 });
   sun.shadow.normalBias = .025;
   sun.shadow.bias = -.0002;

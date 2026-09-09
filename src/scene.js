@@ -8,16 +8,18 @@ import { surfaceMaterial } from './graphics/materials.js';
 import { sampleRenderedWater } from './water.js';
 import { createLighting } from './graphics/lighting.js';
 import { createFlagAnimation } from './graphics/flag-animation.js';
+import { renderQuality } from './graphics/render-quality.js';
 
 export function createScene(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
+  const gl = renderer.getContext(), rendererInfo = gl.getExtension('WEBGL_debug_renderer_info');
+  const quality = renderQuality(rendererInfo ? gl.getParameter(rendererInfo.UNMASKED_RENDERER_WEBGL) : '');
   renderer.setClearColor('#a5c9da'); renderer.outputColorSpace = THREE.SRGBColorSpace;
   container.appendChild(renderer.domElement);
   const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2('#a5c9da', .00075);
   const camera = new THREE.PerspectiveCamera(49, 1, .1, 2200);
-  const lighting = createLighting(scene, renderer);
-  const environment = createEnvironment(scene, renderer), ocean = createOcean(scene), rig = createRig(scene), wind = createWind(scene);
+  const lighting = createLighting(scene, renderer, quality.shadowSize);
+  const environment = createEnvironment(scene, renderer, quality.reflectionSize), ocean = createOcean(scene), rig = createRig(scene), wind = createWind(scene);
   const gateGroup = new THREE.Group(); scene.add(gateGroup);
   const orange = surfaceMaterial('#ff6326'), white = surfaceMaterial('#fff8da');
   const flags = [], buoys = [];
@@ -33,11 +35,15 @@ export function createScene(container) {
   let mode = 0, initialized = false, previousTime = 0;
   const smoothTarget = new THREE.Vector3(), desiredCamera = new THREE.Vector3(), desiredTarget = new THREE.Vector3();
   const forward = new THREE.Vector3(), right = new THREE.Vector3();
-  function resize() { renderer.setSize(container.clientWidth, container.clientHeight); camera.aspect = container.clientWidth / container.clientHeight; camera.updateProjectionMatrix(); }
+  function resize() {
+    const width = Math.max(1, container.clientWidth), height = Math.max(1, container.clientHeight);
+    renderer.setPixelRatio(quality.pixelRatio(width, height, devicePixelRatio));
+    renderer.setSize(width, height); camera.aspect = width / height; camera.updateProjectionMatrix();
+  }
   window.addEventListener('resize', resize); resize();
   return {
     camera: () => { mode = (mode + 1) % 3; return ['Chase', 'Side', 'Close'][mode]; },
-    inspect: () => ({ rig: rig.inspect(), wind: wind.inspect(), effects: ocean.inspect(), calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures,
+    inspect: () => ({ rig: rig.inspect(), wind: wind.inspect(), effects: ocean.inspect(), resolution: { software: quality.software, width: renderer.domElement.width, height: renderer.domElement.height }, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures,
       buoys: gateGroup.visible ? buoys.map(buoy => ({ position: buoy.getWorldPosition(new THREE.Vector3()).toArray(), pitch: buoy.rotation.x, roll: buoy.rotation.z })) : [] }),
     render(sim, input, dt, gate, showWind) {
       if (sim.time < previousTime) initialized = false;

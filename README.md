@@ -36,6 +36,8 @@ The force model follows the standard [lift/drag relationships explained by NASA]
 
 Sunbreak Bay uses a natural coastal palette, physically shaded equipment, warm sunlight, cool fill light, and soft equipment shadows. The sky and ocean share one sun direction, with a glowing solar disc, layered clouds, Fresnel reflections, fine wind ripples, and filtered specular highlights. The procedural sky supplies roughness-filtered environment reflections on equipment. ACES tone mapping keeps bright reflections under control. A slight speed-dependent camera widening, hull wake, and pooled spray reinforce acceleration.
 
+Software WebGL renderers such as SwiftShader use a drawing buffer capped at 160,000 pixels, with smaller shadow and reflection maps to keep CPU rendering responsive. The HUD retains its native resolution. Hardware rendering uses the regular pixel-density cap of 1.7.
+
 The islands have continuous ridgelines, eroded rock shelves, sandy beaches and irregular coastlines. Slope-dependent vegetation, procedural rock strata and surface grain give the terrain variation at different distances. Curved palm trunks, wind-animated fronds, low scrub and beach boulders share instanced geometry. Translucent shallows and broken surf follow each coastline and the same rendered wave surface as the ocean.
 
 The ocean uses a dense local wave mesh and a lightweight distant ring. The surface displacement, lighting slopes, crest foam, buoyancy, foil flow, wakes, and floating course buoys share the wave definition in `src/water.js`. Waves and floating buoys share the same fade to the flat distant ring at the mesh boundary. Spray strengthens on water impacts and carving, while the foiling trail is lighter. A fixed pool of 640 droplets and wind-carried mist particles produces rail spray and touchdown bursts; falling droplets and impacts leave expanding ripple rings in a second fixed pool. Effects freeze when paused and clear on restart. Thin, broken crest foam is antialiased per pixel and fades with distance; underwater gear remains visible. The **Waves** setting ranges from flat water through the default rolling swell to rough seas; approaching waves at different angles changes the ride. Changing wave strength preserves board clearance and vertical motion relative to the water. Scenery is procedural, with instanced palms and shrubs, and requires no external textures.
@@ -49,6 +51,7 @@ The rider uses a simple graphite wetsuit silhouette with tapered limbs, gloves, 
 ```sh
 npm test                 # force model, numerical stability, wing pose and limb geometry
 npm run test:browser     # installed Google Chrome; desktop + touch emulation
+WINGFOIL_SOFTWARE_RENDERING=1 npm run test:browser  # reproduce the CI software-rendering path
 npm run build           # static production files in dist/
 npm run preview         # serve the production build
 ```

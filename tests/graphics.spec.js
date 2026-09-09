@@ -26,6 +26,10 @@ for (const mobile of [false, true]) test(`new graphics compile and wing poses re
     expect(Math.abs(Math.atan2(Math.sin(graphics.rig.yaw - graphics.rig.heading), Math.cos(graphics.rig.yaw - graphics.rig.heading)))).toBeLessThan(.03);
     expect(graphics.calls).toBeLessThan(160);
     expect(graphics.triangles).toBeLessThan(120000);
+    if (process.env.CI || process.env.WINGFOIL_SOFTWARE_RENDERING) {
+      expect(graphics.resolution.software).toBe(true);
+      expect(graphics.resolution.width * graphics.resolution.height).toBeLessThanOrEqual(160000);
+    }
     expect(graphics.wind.visible).toBe(true);
   }
   await page.evaluate(() => { window.__drift.input.depower = true; });
