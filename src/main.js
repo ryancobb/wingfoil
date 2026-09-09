@@ -1,6 +1,8 @@
 import './style.css';
 import './mobile.css';
 import './arcade.css';
+import './navigation.css';
+import { gateNavigation } from './gate-navigation.js';
 import { Simulation, KNOTS, clamp, rad, wrap } from './physics.js';
 import { createScene } from './scene.js';
 import { trimFeedback } from './trim-feedback.js';
@@ -25,8 +27,9 @@ document.querySelector('#app').innerHTML = `
     <div class="header-actions"><button id="help" class="icon-button" aria-label="How to ride">${icon('help')}</button><button id="settings" class="icon-button" aria-label="Session settings">${icon('settings')}</button><button id="pause" class="icon-button" aria-label="Pause">${icon('pause')}</button></div>
   </header>
   <section class="session-label"><div class="eyebrow">SUNBREAK BAY / 01</div><h1>Chase the swell.</h1><p>Catch wind. Lift off. Let it rip.</p></section>
-  <aside class="wind-card glass"><div class="eyebrow">TRUE WIND <span class="live-dot"></span></div><div class="wind-reading"><span id="wind-value">18.0</span><span class="unit">kn</span><svg class="wind-arrow" viewBox="0 0 48 48"><path d="M24 5 37 38 24 31 11 38Z" fill="currentColor"/></svg></div><div class="card-rule"></div><div class="small-row"><span>Apparent</span><strong><span id="apparent-value">18.0</span> kn</strong></div><div class="small-row"><span>Point of sail</span><strong id="sail-value">Beam reach</strong></div><div class="wind-spark"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="eyebrow muted">LIVE CONDITIONS</div></aside>
+  <aside class="wind-card glass"><div class="eyebrow">TRUE WIND <span class="live-dot"></span></div><div class="wind-reading"><span id="wind-value">18.0</span><span class="unit">kn</span><svg class="wind-arrow" viewBox="0 0 48 48"><path d="M24 5 37 38 24 31 11 38Z" fill="currentColor"/></svg></div><div id="wind-direction" class="wind-direction">From your left</div><div class="card-rule"></div><div class="small-row"><span>Apparent</span><strong><span id="apparent-value">18.0</span> kn</strong></div><div class="small-row"><span>Point of sail</span><strong id="sail-value">Beam reach</strong></div><div class="wind-spark"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="eyebrow muted">LIVE CONDITIONS</div></aside>
   <div class="objective glass"><span class="objective-symbol">↗</span><div><div class="eyebrow" id="objective-title">YOUR FIRST FLIGHT</div><p id="objective-text">Build speed & lift onto the foil</p></div><span id="objective-progress">0 / 3</span></div>
+  <div id="gate-navigation" class="gate-navigation" role="img" aria-label="Next gate" hidden><span class="gate-compass"><svg id="gate-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 20 12 16 4 20Z" fill="currentColor"/></svg></span><span><strong id="gate-distance"></strong><small id="gate-direction"></small></span></div>
   <div class="telemetry"><div class="speed"><span id="speed-value">0.0</span><span>knots</span></div><div class="status"><span class="live-dot"></span><span id="status-value">READY TO RIDE</span></div><div class="metrics"><div><span class="eyebrow">FOIL HEIGHT</span><strong><span id="height-value">0</span><small> cm</small></strong></div><div><span class="eyebrow">FLIGHT TIME</span><strong id="flight-value">0:00</strong></div><div><span class="eyebrow">DISTANCE</span><strong><span id="distance-value">0</span><small> m</small></strong></div></div></div>
   <div class="foil-monitor glass"><div class="eyebrow">FOIL HEIGHT <span id="foil-load">0 cm</span></div><div class="foil-track"><span class="foil-safe"></span><span id="foil-marker"></span></div><div class="foil-labels"><span>water</span><span>breach</span></div></div>
   <div class="view-actions"><button id="wind-toggle" class="icon-button active" aria-label="Toggle wind trails" aria-pressed="true">${icon('wind')}</button><button id="camera" class="icon-button" aria-label="Change camera">${icon('camera')}</button><button id="reset" class="icon-button" aria-label="Restart session">${icon('reset')}</button></div>
@@ -157,6 +160,9 @@ function updateUI() {
   const t = sim.telemetry;
   $('speed-value').textContent = (t.speed * KNOTS).toFixed(1);
   $('wind-value').textContent = (t.wind * KNOTS).toFixed(1);
+  const windSource = wrap(Math.atan2(-t.wx, t.wz) - sim.heading) / rad;
+  const windDirection = Math.abs(windSource) < 35 ? 'From ahead' : Math.abs(windSource) > 145 ? 'From behind' : windSource > 0 ? 'From your right' : 'From your left';
+  $('wind-direction').textContent = t.wind < .3 ? 'Calm' : windDirection;
   $('apparent-value').textContent = (t.apparent * KNOTS).toFixed(1);
   const trueAngle = Math.abs(wrap(sim.heading + Math.atan2(t.wx, t.wz))) / rad;
   $('sail-value').textContent = trueAngle < 40 ? 'Into wind' : trueAngle < 70 ? 'Close reach' : trueAngle < 110 ? 'Beam reach' : trueAngle < 155 ? 'Broad reach' : 'Downwind';
@@ -191,6 +197,16 @@ function updateUI() {
   else if (feedback.good && t.speed < 3) hint = 'Clean airflow! Hold a reach and pump to help takeoff.';
   else if (feedback.good && t.height < .22) hint = 'Speed is building. Shift a little weight back to rise.';
   $('coach-text').textContent = hint;
+  const navigation = gateNavigation(sim, gate);
+  $('gate-navigation').hidden = !navigation;
+  $('app').classList.toggle('course-active', !!navigation);
+  if (navigation) {
+    $('gate-arrow').style.transform = `rotate(${navigation.bearing}rad)`;
+    $('gate-distance').textContent = `GATE ${gates + 1} · ${Math.round(navigation.distance)} m`;
+    $('gate-direction').textContent = navigation.direction;
+    $('gate-navigation').dataset.aligned = String(navigation.direction === 'Straight ahead');
+    $('gate-navigation').setAttribute('aria-label', `Gate ${gates + 1}, ${Math.round(navigation.distance)} meters. ${navigation.direction}.`);
+  }
   $('objective-title').textContent = lesson < 3 ? 'YOUR FIRST FLIGHT' : `FREE RIDE / GATE ${gates + 1}`;
   $('objective-text').textContent = lesson === 0 ? 'Build speed & lift onto the foil' : lesson === 1 ? 'Shift weight back & find lift' : lesson === 2 ? `Hold your flight · ${Math.min(10, Math.floor(sim.currentFlight))} / 10 s` : `Pass between the orange buoys · ${Math.round(Math.hypot(gate.x - sim.x, gate.z - sim.z))} m`;
   $('objective-progress').textContent = lesson < 3 ? `${lesson} / 3` : `${gates} gates`;

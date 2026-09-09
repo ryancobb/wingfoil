@@ -2,9 +2,9 @@ import * as THREE from 'three';
 
 // Each ribbon is a world-space gust: it travels with the true wind, not the camera.
 export function createWind(scene) {
-  const count = 24, segments = 36;
+  const count = 36, segments = 28;
   const pos = new Float32Array(count * (segments + 1) * 2 * 3), opacity = new Float32Array(count * (segments + 1) * 2), indices = [];
-  const gusts = Array.from({ length: count }, (_, i) => ({ born: -100, seed: i * 13.137, x: 0, z: 0, y: 0, length: 5, radius: .7, curl: i % 3 !== 2 }));
+  const gusts = Array.from({ length: count }, (_, i) => ({ born: -100, seed: i * 13.137, x: 0, z: 0, y: 0, length: 5 }));
   for (let i = 0; i < count; i++) for (let j = 0; j < segments; j++) {
     const k = (i * (segments + 1) + j) * 2; indices.push(k, k + 1, k + 2, k + 2, k + 1, k + 3);
   }
@@ -19,12 +19,7 @@ export function createWind(scene) {
   const rnd = (seed, n) => { const v = Math.sin(seed * 17.91 + n * 43.71) * 43658.21; return v - Math.floor(v); };
   let previousTime = 0;
   function path(g, u, dx, dz, output) {
-    let along = u * g.length, across = Math.sin(u * Math.PI * 1.4) * .20, rise = Math.sin(u * Math.PI) * .16;
-    if (g.curl && u > .58) {
-      const theta = (u - .58) / .42 * Math.PI * 1.8;
-      along = .58 * g.length + Math.sin(theta) * g.radius;
-      rise += (1 - Math.cos(theta)) * g.radius;
-    }
+    const along = u * g.length, across = Math.sin(u * Math.PI * 1.4) * .20, rise = Math.sin(u * Math.PI) * .10;
     output.set(g.x + dx * along - dz * across, g.y + rise, g.z + dz * along + dx * across);
   }
   return {
@@ -39,9 +34,9 @@ export function createWind(scene) {
         if (g.born < -50 || sim.time - g.born > 4.5) {
           g.seed += 1;
           camera.getWorldDirection(viewDirection); viewDirection.y = 0; viewDirection.normalize();
-          const depth = i < 16 ? 5 + rnd(g.seed, 2) * 18 : 24 + rnd(g.seed, 2) * 25;
+          const depth = i < 24 ? 5 + rnd(g.seed, 2) * 20 : 27 + rnd(g.seed, 2) * 30;
           const lateral = (rnd(g.seed, 1) - .5) * depth * camera.aspect * .8;
-          Object.assign(g, { born: sim.time - (g.born < -50 ? rnd(g.seed, 8) * 4.3 : 0), x: camera.position.x + viewDirection.x * depth - viewDirection.z * lateral, z: camera.position.z + viewDirection.z * depth + viewDirection.x * lateral, y: .45 + rnd(g.seed, 3) * 3.6, radius: .48 + rnd(g.seed, 5) * .65, length: 3.6 + Math.min(12, wind) * .23 + rnd(g.seed, 6) * 2 });
+          Object.assign(g, { born: sim.time - (g.born < -50 ? rnd(g.seed, 8) * 4.3 : 0), x: camera.position.x + viewDirection.x * depth - viewDirection.z * lateral, z: camera.position.z + viewDirection.z * depth + viewDirection.x * lateral, y: .45 + rnd(g.seed, 3) * 3.6, length: 3.6 + Math.min(12, wind) * .23 + rnd(g.seed, 6) * 2 });
         }
         g.x += dx * wind * dt; g.z += dz * wind * dt;
         const age = (sim.time - g.born) / 4.5;
@@ -51,10 +46,11 @@ export function createWind(scene) {
           path(g, u, dx, dz, center); path(g, Math.min(1, u + .002), dx, dz, next);
           if (j === segments) { path(g, u - .002, dx, dz, next); tangent.subVectors(center, next); } else tangent.subVectors(next, center);
           eye.subVectors(camera.position, center); side.crossVectors(tangent, eye).normalize();
-          const taper = Math.pow(Math.sin(u * Math.PI), .65), width = (.027 + Math.min(wind, 15) * .0022) * taper;
+          const head = Math.exp(-Math.pow((u - .78) / .12, 2));
+          const taper = Math.pow(Math.sin(u * Math.PI), .65), width = (.024 + Math.min(wind, 15) * .0018) * taper * (1 + head * .5);
           const riderDistance = Math.hypot(center.x - sim.x, center.z - sim.z);
           const clearRider = Math.min(1, Math.max(0, (riderDistance - 1.5) / 2));
-          const alpha = envelope * taper * (.42 + Math.min(wind / 25, .25)) * clearRider;
+          const alpha = envelope * taper * (.24 + Math.min(wind / 65, .2) + head * .12) * clearRider;
           for (let k = 0; k < 2; k++) {
             const index = (i * (segments + 1) + j) * 2 + k, sign = k ? 1 : -1;
             pos[index * 3] = center.x + side.x * width * sign;

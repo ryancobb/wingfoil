@@ -7,11 +7,15 @@ for (const mobile of [false, true]) test(`new graphics compile and wing poses re
   page.on('console', e => { if (e.type() === 'error') errors.push(e.text()); });
   await page.goto('/?debug'); await page.locator('#start').click();
   for (const heading of [Math.PI / 2, -Math.PI / 2]) {
-    await page.evaluate(h => {
+    const changedAt = await page.evaluate(h => {
       const { sim, input } = window.__drift;
       sim.heading = h; sim.vx = Math.sin(h) * 6; sim.vz = -Math.cos(h) * 6; sim.y = .46;
       input.trim = .65; input.depower = false;
+      return sim.time;
     }, heading);
+    // The first requested tack may already match the previous frame. Wait until
+    // the new input has actually rendered before checking that its pose settled.
+    await expect.poll(() => page.evaluate(() => window.__drift.sim.time)).toBeGreaterThan(changedAt);
     await expect.poll(() => page.evaluate(() => window.__drift.graphics().rig.tack)).toBe(heading > 0 ? -1 : 1);
     await expect.poll(() => page.evaluate(() => {
       const rig = window.__drift.graphics().rig;

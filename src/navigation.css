@@ -1,0 +1,33 @@
+.gate-navigation {
+  position: absolute; top: 108px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px; padding: 9px 14px 9px 10px;
+  color: #f4f1e6; background: #17333dcc; border: 1px solid #e1eced55;
+  border-radius: 32px; pointer-events: none; font-variant-numeric: tabular-nums;
+}
+.gate-navigation[hidden] { display: none; }
+.gate-compass { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #ecdfb34d; border-radius: 50%; flex-shrink: 0; }
+.gate-compass svg { width: 24px; height: 24px; color: #ffd284; }
+.gate-navigation strong { display: block; font-size: 11px; line-height: 1.5; letter-spacing: 1px; }
+.gate-navigation small { display: block; font-size: 11px; line-height: 1.5; color: #c6dbdf; }
+.gate-navigation[data-aligned="true"] .gate-compass svg { color: #b9e6c4; }
+.course-active #toast { top: 174px; }
+@media (max-width: 700px), (max-height: 570px) and (orientation: landscape), (pointer: coarse) and (max-width: 1100px) {
+  .gate-navigation { top: calc(max(10px, env(safe-area-inset-top)) + 146px); left: auto; right: var(--edge-right); transform: none; gap: 6px; padding: 7px 10px 7px 7px; }
+  .gate-compass { width: 28px; height: 28px; }
+  .gate-compass svg { width: 20px; height: 20px; }
+  .gate-navigation strong { font-size: 10px; letter-spacing: .5px; }
+  .gate-navigation small { font-size: 10px; }
+  .course-active #toast { top: calc(max(10px, env(safe-area-inset-top)) + 238px); }
+}
+@media (max-height: 620px) and (orientation: portrait) and (max-width: 700px) {
+  .gate-navigation { top: calc(max(10px, env(safe-area-inset-top)) + 181px); }
+}
+@media (max-height: 570px) and (orientation: landscape) {
+  .gate-navigation { top: max(74px, calc(env(safe-area-inset-top) + 64px)); left: 50%; right: auto; transform: translateX(-50%); }
+  .course-active #toast { top: max(128px, calc(env(safe-area-inset-top) + 118px)); }
+}
+
+.wind-direction { margin-top: 4px; color: #d6e7e9; font-size: 11px; letter-spacing: .1px; }
+@media (max-width: 700px), (max-height: 570px) and (orientation: landscape), (pointer: coarse) and (max-width: 1100px) {
+  .wind-direction { font-size: 10px; }
+}

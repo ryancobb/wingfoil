@@ -1,15 +1,16 @@
 import * as THREE from 'three';
 import { clamp, rad } from '../physics.js';
-import { ellipsoid, rod, tube, link, setLink, solveJoint } from './primitives.js';
+import { ellipsoid, rod, tube, setLink, solveJoint } from './primitives.js';
 import { wingPose, smoothAngle } from './wing-pose.js';
-import { toon } from './toon.js';
+import { createRider } from './rider.js';
+import { surfaceMaterial } from './materials.js';
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 export function createRig(scene) {
-  const material = toon;
-  const ink = material('#112e59'), suit = material('#087cb1'), seam = material('#66e0dc');
-  const coral = material('#ff572b'), sand = material('#fff2bd'), skin = material('#db9a60');
-  const carbon = material('#132b49');
+  const material = surfaceMaterial;
+  const ink = material('#112e59'), suit = material('#087cb1', { roughness: .72 }), seam = material('#66e0dc');
+  const coral = material('#ff572b'), sand = material('#fff2bd');
+  const carbon = material('#132b49', { roughness: .25, metalness: .4 });
   const root = new THREE.Group(); scene.add(root);
   const board = new THREE.Group(); root.add(board);
 
@@ -22,6 +23,7 @@ export function createRig(scene) {
   const boardGeo = new THREE.ExtrudeGeometry(outline, { depth: .065, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: .055, bevelThickness: .045, curveSegments: 18 });
   boardGeo.rotateX(Math.PI / 2); boardGeo.translate(0, .095, 0);
   const hull = new THREE.Mesh(boardGeo, [sand, coral]); board.add(hull);
+  hull.castShadow = true;
   const deck = new THREE.Mesh(new THREE.BoxGeometry(.52, .025, 1.04), suit); deck.position.set(0, .149, .1); board.add(deck);
   for (let n = 0; n < 14; n++) rod(board, seam, [-.255, .164, -.39 + n * .071], [.255, .164, -.39 + n * .071], .003);
   const noseStripe = new THREE.Mesh(new THREE.BoxGeometry(.10, .007, .33), coral); noseStripe.position.set(0, .148, -.61); board.add(noseStripe);
@@ -45,43 +47,7 @@ export function createRig(scene) {
   }
   const frontFoil = foilWing(1.12, .21, -.17); foilWing(.48, .13, .49);
 
-  // Torso cross-sections describe shoulders, chest, waist and hips instead of a pill.
-  const body = new THREE.Group(); board.add(body);
-  function torsoGeometry() {
-    const rings = [[-.24, .15, .115], [-.12, .155, .125], [.10, .225, .145], [.22, .235, .125], [.29, .145, .10]];
-    const pos = [], idx = [];
-    for (let r = 0; r < rings.length; r++) for (let i = 0; i <= 20; i++) {
-      const a = i / 20 * Math.PI * 2, [y, x, z] = rings[r]; pos.push(Math.cos(a) * x, y, Math.sin(a) * z);
-      if (r < rings.length - 1 && i < 20) { const k = r * 21 + i; idx.push(k, k + 1, k + 21, k + 1, k + 22, k + 21); }
-    }
-    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals(); return geo;
-  }
-  body.add(new THREE.Mesh(torsoGeometry(), suit));
-  const vest = new THREE.Mesh(torsoGeometry(), coral); vest.scale.set(1.045, .82, 1.065); vest.position.y = .045; body.add(vest);
-  rod(body, ink, [0, -.12, -.143], [0, .225, -.139], .012);
-  for (const y of [-.1, .01, .12]) rod(body, sand, [-.16, y, -.13], [.16, y, -.13], .007);
-  ellipsoid(body, ink, [0, -.27, 0], [.175, .15, .135]);
-  rod(body, skin, [0, .23, 0], [0, .39, 0], .06);
-  const head = new THREE.Group(); head.position.set(0, .48, -.01); body.add(head);
-  ellipsoid(head, skin, [0, 0, 0], [.113, .147, .113]);
-  ellipsoid(head, skin, [0, -.04, -.107], [.035, .042, .035]);
-  ellipsoid(head, skin, [-.109, -.006, 0], [.027, .042, .025]);
-  ellipsoid(head, skin, [.109, -.006, 0], [.027, .042, .025]);
-  const helmet = ellipsoid(head, sand, [0, .072, .007], [.124, .094, .12]);
-  for (const x of [-.055, 0, .055]) {
-    const vent = new THREE.Mesh(new THREE.BoxGeometry(.014, .008, .055), ink); vent.position.set(x, .164 - Math.abs(x) * .19, -.005); head.add(vent);
-  }
-  tube(head, ink, [[-.113, .04, .0], [-.09, -.12, -.01], [0, -.145, -.02], [.09, -.12, -.01], [.113, .04, 0]], .007, 18);
-  for (const x of [-.046, .046]) ellipsoid(head, ink, [x, .01, -.107], [.044, .028, .013]);
-  rod(head, ink, [-.046, .01, -.117], [.046, .01, -.117], .007);
-
-  const arms = [], legs = [];
-  for (let i = 0; i < 2; i++) {
-    const hand = ellipsoid(board, skin, [0, 0, 0], [.045, .066, .038]);
-    arms.push({ upper: link(board, suit, .057), lower: link(board, suit, .043), joint: ellipsoid(board, suit, [0, 0, 0], [.056, .056, .056]), hand });
-    const foot = ellipsoid(board, skin, [0, .18, 0], [.065, .048, .135]);
-    legs.push({ upper: link(board, ink, .076), lower: link(board, ink, .055), joint: ellipsoid(board, ink, [0, 0, 0], [.071, .071, .071]), foot });
-  }
+  const { body, head, arms, legs } = createRider(board);
   const leashGeo = new THREE.BufferGeometry().setFromPoints(Array.from({ length: 25 }, () => V()));
   const leash = new THREE.Line(leashGeo, new THREE.LineBasicMaterial({ color: '#122a34' })); board.add(leash);
 
@@ -119,7 +85,8 @@ export function createRig(scene) {
   }
   const canopyGeo = new THREE.BufferGeometry();
   canopyGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); canopyGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); canopyGeo.setIndex(indices); canopyGeo.computeVertexNormals();
-  wing.add(new THREE.Mesh(canopyGeo, toon('#ffffff', { vertexColors: true, side: THREE.DoubleSide })));
+  const canopy = new THREE.Mesh(canopyGeo, surfaceMaterial('#ffffff', { vertexColors: true, side: THREE.DoubleSide, roughness: .68 }));
+  canopy.castShadow = true; wing.add(canopy);
   const windowGeo = new THREE.BufferGeometry(); windowGeo.setAttribute('position', canopyGeo.attributes.position); windowGeo.setIndex(windowIndices); windowGeo.computeVertexNormals();
   const windows = new THREE.Mesh(windowGeo, material('#8cdded', { transparent: true, opacity: .38, side: THREE.DoubleSide, depthWrite: false }));
   windows.renderOrder = 2; wing.add(windows);
@@ -137,6 +104,7 @@ export function createRig(scene) {
   tube(wing, ink, [[-.1, .12, -.86], [-.07, -.02, -.98], [.07, -.02, -.98], [.1, .12, -.86]], .022, 12);
   const telltaleGeo = new THREE.BufferGeometry(); telltaleGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(36), 3));
   const telltales = new THREE.LineSegments(telltaleGeo, new THREE.LineBasicMaterial({ color: '#d45237' })); root.add(telltales);
+  root.traverse(object => { if (object.isMesh) object.receiveShadow = true; });
 
   const desiredWing = new THREE.Quaternion(), euler = new THREE.Euler(0, 0, 0, 'YXZ');
   const target = V(), a = V(), b = V(), pole = V(), joint = V();
@@ -195,6 +163,7 @@ export function createRig(scene) {
         pos.setXYZ(i * (chordSteps + 1) + j, ...p);
       }
       pos.needsUpdate = true;
+      canopyGeo.computeVertexNormals();
       root.updateMatrixWorld(true);
       // Handle coordinates come from the rendered wing, so the hands follow its full pose.
       frontHand.copy(grips[0]).lerp(neutralGrip, flagAmount);
