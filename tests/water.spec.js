@@ -42,7 +42,12 @@ test('GPU ocean agrees with physics nearby and buoy sampling through the distant
   });
   for (const { gpu, cpu } of samples) {
     expect(gpu[3]).toBe(1);
-    for (let i = 0; i < 3; i++) expect(Math.abs(gpu[i] - cpu[i])).toBeLessThan(.0001);
+    // Float interpolation/readback varies across native GPUs and SwiftShader.
+    // A 1 mm height / .001 slope tolerance still detects displacement or
+    // falloff mismatches while allowing the observed submillimetre variation.
+    for (let i = 0; i < 3; i++) {
+      expect(Math.abs(gpu[i] - cpu[i]), `${['height', 'slopeX', 'slopeZ'][i]}: GPU ${gpu[i]}, CPU ${cpu[i]}`).toBeLessThan(.001);
+    }
   }
 });
 
