@@ -124,3 +124,65 @@ test('sustained flight unlocks a course and crossing between buoys counts', asyn
   });
   await expect.poll(() => page.evaluate(() => window.__drift.getState().gates), { timeout: 5000 }).toBe(1);
 });
+
+test('trim slider, target band and feedback agree through easing, stall and flagging', async ({ page }) => {
+  await page.goto('/?debug');
+  // Keep the intro open to freeze motion while testing fixed apparent wind.
+  const setTrim = async value => {
+    await page.locator('#trim').evaluate((el, value) => { el.value = value; el.dispatchEvent(new Event('input')); }, value);
+    await page.evaluate(() => { const { sim, input } = window.__drift; sim.step(0, input); });
+  };
+  await setTrim(10); await expect(page.locator('#trim-feedback')).toContainText('Sheet in');
+  await setTrim(90); await expect(page.locator('#trim-feedback')).toContainText('Ease out');
+  await setTrim(36.5); await expect(page.locator('#trim-feedback')).toHaveText('Clean airflow');
+  await expect(page.locator('#trim')).toHaveAttribute('aria-valuetext', /Clean airflow/);
+  const offset = await page.evaluate(() => {
+    const slider = document.querySelector('#trim'), target = document.querySelector('#sweet-spot');
+    const thumb = parseFloat(getComputedStyle(slider).getPropertyValue('--thumb-size'));
+    const actual = target.offsetLeft, expected = thumb / 2 + window.__drift.sim.telemetry.idealTrim * (slider.clientWidth - thumb);
+    return Math.abs(actual - expected);
+  });
+  expect(offset).toBeLessThan(1);
+  await page.evaluate(() => { const { sim, input } = window.__drift; sim.heading = 0; sim.step(0, input); });
+  await expect(page.locator('#trim-feedback')).toHaveText('Steer across wind');
+  await expect(page.locator('#sweet-spot')).toBeHidden();
+  await page.evaluate(() => { const { sim, input } = window.__drift; input.depower = true; sim.step(0, input); });
+  await expect(page.locator('#trim-feedback')).toHaveText('Wing flagged');
+  await expect(page.locator('#coach-text')).toContainText('Power up');
+  await expect(page.locator('#sweet-spot')).toBeHidden();
+});
+
+for (const width of [1280, 390]) test(`working trim stays visible on a close reach and at the eased endpoint (${width}px)`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 844 });
+  await page.goto('/?debug');
+  // Freeze gameplay under the intro while advancing a real close-reach flight.
+  await page.evaluate(() => {
+    const { sim, input } = window.__drift;
+    sim.reset(); sim.settings.gusts = sim.settings.chop = 0; sim.heading = Math.PI / 3;
+    for (let i = 0; i < 7200; i++) sim.step(1 / 120, { trim: sim.telemetry.idealTrim ?? .38 });
+    input.trim = sim.telemetry.idealTrim;
+    document.querySelector('#trim').value = input.trim * 100;
+    sim.step(0, input);
+  });
+  await expect(page.locator('#trim-feedback')).toHaveText('Clean airflow');
+  await expect(page.locator('#sweet-spot')).toBeVisible();
+  const closeBand = await page.locator('#sweet-spot').boundingBox();
+  await page.evaluate(() => {
+    const { sim, input } = window.__drift;
+    sim.reset(); sim.heading = 134 * Math.PI / 180; input.trim = 0;
+    document.querySelector('#trim').value = 0; sim.step(0, input);
+  });
+  await expect(page.locator('#trim-value')).toHaveText('0%');
+  await expect(page.locator('#trim-feedback')).toHaveText('Clean airflow');
+  await expect(page.locator('#sweet-spot')).toBeVisible();
+  const endpointBand = await page.locator('#sweet-spot').boundingBox();
+  const slider = await page.locator('#trim').boundingBox();
+  expect(endpointBand.width).toBeLessThan(closeBand.width);
+  expect(endpointBand.x).toBeGreaterThanOrEqual(slider.x);
+  expect(endpointBand.x + endpointBand.width).toBeLessThan(slider.x + slider.width * .15);
+  await page.evaluate(() => {
+    const { sim, input } = window.__drift;
+    input.trim = .1; document.querySelector('#trim').value = 10; sim.step(0, input);
+  });
+  await expect(page.locator('#trim-feedback')).toContainText('Ease out');
+});

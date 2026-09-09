@@ -59,3 +59,85 @@ test('gusts, turns and opposing weight shifts remain numerically stable', () => 
   for (const value of Object.values(sim.telemetry)) if (typeof value === 'number') assert.ok(Number.isFinite(value));
   assert.ok(sim.telemetry.speed < 30); assert.ok(Math.abs(sim.y) < 2);
 });
+
+test('sheeting in loads a reaching wing, oversheeting stalls it, easing restores drive on either tack', () => {
+  for (const heading of [-Math.PI / 2, Math.PI / 2]) {
+    const sim = new Simulation({ gusts: 0, chop: 0 }); sim.heading = heading;
+    const luff = sim.step(0, { trim: .15 });
+    const filled = sim.step(0, { trim: luff.idealTrim });
+    const stall = sim.step(0, { trim: .8 });
+    const eased = sim.step(0, { trim: filled.idealTrim });
+    assert.equal(luff.trimState, 'luffing'); assert.equal(luff.wingLoad, 0);
+    assert.equal(filled.trimState, 'sweet'); assert.ok(filled.drive > 150);
+    assert.equal(stall.trimState, 'stalled'); assert.equal(stall.status, 'WING STALL');
+    assert.ok(stall.drive < filled.drive * .4);
+    assert.ok(eased.drive > stall.drive * 2);
+    const feathered = sim.step(0, { trim: 0 });
+    assert.ok(feathered.drive < eased.drive * .05);
+  }
+});
+
+test('apparent wind moves the trim target inward as board speed builds', () => {
+  const sim = new Simulation({ gusts: 0 });
+  const atRest = sim.step(0, { trim: .38 });
+  sim.vx = 7;
+  const moving = sim.step(0, { trim: .38 });
+  assert.ok(moving.beta < atRest.beta);
+  assert.ok(moving.idealTrim > atRest.idealTrim + .2);
+  assert.equal(moving.trimState, 'luffing');
+  assert.equal(sim.step(0, { trim: moving.idealTrim }).trimState, 'sweet');
+});
+
+test('efficient trim is unavailable head-to-wind, deep downwind and without airflow', () => {
+  for (const heading of [0, Math.PI]) {
+    const sim = new Simulation({ gusts: 0 }); sim.heading = heading;
+    const t = sim.step(0);
+    const trimmed = sim.step(0, { trim: t.idealTrim });
+    assert.equal(trimmed.trimAvailable, false); assert.equal(trimmed.trimState, 'heading');
+  }
+  const sim = new Simulation({ wind: 0 });
+  assert.equal(sim.step(0).trimState, 'calm'); assert.equal(sim.telemetry.trimAvailable, false);
+});
+
+test('trim is bounded, and flagging overrides every rear-hand position', () => {
+  const sim = new Simulation({ gusts: 0 });
+  assert.equal(sim.step(0, { trim: -5 }).alpha, sim.step(0, { trim: 0 }).alpha);
+  assert.equal(sim.step(0, { trim: 5 }).alpha, sim.step(0, { trim: 1 }).alpha);
+  const a = sim.step(0, { trim: 0, depower: true });
+  const b = sim.step(0, { trim: 1, depower: true });
+  assert.equal(a.drive, b.drive); assert.equal(a.wingLoad, 0); assert.equal(b.trimState, 'flagged');
+});
+
+test('powered close reaches retain working trim as apparent wind moves forward on both tacks', () => {
+  for (const tack of [-1, 1]) {
+    const sim = new Simulation({ gusts: 0, chop: 0 }); sim.heading = tack * 60 * rad;
+    for (let i = 0; i < 7200; i++) sim.step(1 / 120, trimmed(sim));
+    const t = sim.step(0, trimmed(sim));
+    assert.ok(sim.longestFlight > 40);
+    assert.ok(t.beta < 30 * rad && t.drive > 200);
+    assert.ok(Math.abs(t.alpha / rad - 12) < 1e-8);
+    assert.equal(t.trimAvailable, true); assert.equal(t.trimState, 'sweet');
+    assert.equal(sim.step(0, { trim: .5 }).trimState, 'luffing');
+    assert.equal(sim.step(0, { trim: 1 }).trimState, 'stalled');
+  }
+});
+
+test('working trim can end at full ease or full sheet without reaching the nominal target', () => {
+  for (const tack of [-1, 1]) for (const [heading, trim, alpha] of [[14, 1, 9], [134, 0, 14], [13, 1, 8], [136, 0, 16]]) {
+    const sim = new Simulation({ gusts: 0 }); sim.heading = tack * heading * rad;
+    const t = sim.step(0, { trim });
+    assert.ok(Math.abs(t.alpha / rad - alpha) < 1e-8);
+    assert.equal(t.trimAvailable, true, `heading ${heading}`);
+    assert.equal(t.trimState, 'sweet', `heading ${heading}`);
+    assert.equal(t.idealTrim, trim);
+    assert.ok(t.trimMin >= 0 && t.trimMax <= 1 && t.trimMin <= t.trimMax);
+    if (trim === 0) assert.equal(t.trimMin, 0);
+    else assert.equal(t.trimMax, 1);
+  }
+  for (const heading of [12.99, 136.01, 0, 180]) {
+    const sim = new Simulation({ gusts: 0 }); sim.heading = heading * rad;
+    sim.step(0);
+    assert.equal(sim.step(0, trimmed(sim)).trimState, 'heading');
+    assert.equal(sim.telemetry.trimAvailable, false);
+  }
+});

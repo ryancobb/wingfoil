@@ -1,4 +1,4 @@
-import { clamp, rad, wrap } from '../physics.js';
+import { clamp, rad, wrap, sheetAngle } from '../physics.js';
 
 // Return board-local heading. Local +z runs from leading edge to trailing edge.
 export function wingPose(sim, input, previousTack = -1) {
@@ -8,7 +8,7 @@ export function wingPose(sim, input, previousTack = -1) {
   const apparent = Math.hypot(across, aft);
   const sourceSide = -across / Math.max(.01, apparent);
   const tack = Math.abs(sourceSide) > .13 ? Math.sign(sourceSide) : previousTack;
-  const sheet = (5 + (1 - clamp(input.trim, 0, 1)) * 115) * rad;
+  const sheet = sheetAngle(input.trim);
   return {
     tack,
     yaw: input.depower ? Math.atan2(across, aft) : -tack * sheet,

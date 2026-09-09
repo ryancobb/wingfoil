@@ -1,7 +1,9 @@
 import './style.css';
 import './mobile.css';
+import './arcade.css';
 import { Simulation, KNOTS, clamp, rad, wrap } from './physics.js';
 import { createScene } from './scene.js';
+import { trimFeedback } from './trim-feedback.js';
 
 const icons = {
   pause: '<path d="M8 5v14M16 5v14"/>',
@@ -19,10 +21,10 @@ document.querySelector('#app').innerHTML = `
   <div class="vignette"></div>
   <header>
     <a class="brand" href="./" aria-label="Drift home"><span class="brand-mark">≈</span> drift<span class="brand-period">.</span></a>
-    <div class="location"><span class="live-dot"></span> OPEN WATER <span class="divider">/</span> THE PRACTICE BAY</div>
+    <div class="location"><span class="live-dot"></span> FREE RIDE <span class="divider">/</span> SUNBREAK BAY</div>
     <div class="header-actions"><button id="help" class="icon-button" aria-label="How to ride">${icon('help')}</button><button id="settings" class="icon-button" aria-label="Session settings">${icon('settings')}</button><button id="pause" class="icon-button" aria-label="Pause">${icon('pause')}</button></div>
   </header>
-  <section class="session-label"><div class="eyebrow">WINGFOIL SIMULATOR / 01</div><h1>Find your flow.</h1><p>Read the wind. Feel the lift.</p></section>
+  <section class="session-label"><div class="eyebrow">SUNBREAK BAY / 01</div><h1>Chase the swell.</h1><p>Catch wind. Lift off. Let it rip.</p></section>
   <aside class="wind-card glass"><div class="eyebrow">TRUE WIND <span class="live-dot"></span></div><div class="wind-reading"><span id="wind-value">18.0</span><span class="unit">kn</span><svg class="wind-arrow" viewBox="0 0 48 48"><path d="M24 5 37 38 24 31 11 38Z" fill="currentColor"/></svg></div><div class="card-rule"></div><div class="small-row"><span>Apparent</span><strong><span id="apparent-value">18.0</span> kn</strong></div><div class="small-row"><span>Point of sail</span><strong id="sail-value">Beam reach</strong></div><div class="wind-spark"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="eyebrow muted">LIVE CONDITIONS</div></aside>
   <div class="objective glass"><span class="objective-symbol">↗</span><div><div class="eyebrow" id="objective-title">YOUR FIRST FLIGHT</div><p id="objective-text">Build speed & lift onto the foil</p></div><span id="objective-progress">0 / 3</span></div>
   <div class="telemetry"><div class="speed"><span id="speed-value">0.0</span><span>knots</span></div><div class="status"><span class="live-dot"></span><span id="status-value">READY TO RIDE</span></div><div class="metrics"><div><span class="eyebrow">FOIL HEIGHT</span><strong><span id="height-value">0</span><small> cm</small></strong></div><div><span class="eyebrow">FLIGHT TIME</span><strong id="flight-value">0:00</strong></div><div><span class="eyebrow">DISTANCE</span><strong><span id="distance-value">0</span><small> m</small></strong></div></div></div>
@@ -31,12 +33,12 @@ document.querySelector('#app').innerHTML = `
   <div id="coach" class="coach"><span class="coach-dot"></span><span id="coach-text">Sheet in gently to catch the wind.</span></div>
   <div class="controls">
     <section class="steering-control"><div class="control-heading"><span>BODY & BOARD</span><span class="key-hint">W A S D</span></div><div class="pad-area"><span class="pad-label top">NOSE DOWN</span><span class="pad-label bottom">NOSE UP</span><div id="joystick" role="application" aria-label="Drag to steer and shift body weight" tabindex="0"><div class="pad-ring"></div><span class="pad-cross horizontal"></span><span class="pad-cross vertical"></span><span class="pad-left">‹</span><span class="pad-right">›</span><div id="stick"></div></div></div><div class="control-caption">steer <span>↔</span> balance <span>↕</span></div></section>
-    <div class="center-controls"><button id="pump" class="pump-button">PUMP <span>SPACE</span></button><div class="energy"><span id="energy-fill"></span></div><span class="desktop-tip">A little rhythm. A little lift.</span></div>
-    <section class="wing-control"><div class="control-heading"><span>WING TRIM</span><strong id="trim-value">38%</strong></div><div class="trim-scale"><span>EASE OUT</span><span>SHEET IN</span></div><div class="slider-wrap"><div id="sweet-spot" title="Efficient trim"></div><input id="trim" aria-label="Wing trim" type="range" min="0" max="100" value="38" /></div><div class="trim-feedback"><span class="sweet-dot"></span><span id="trim-feedback">Find the sweet spot</span><span class="key-hint">Q / E</span></div><button id="depower" class="depower-button" aria-pressed="false"><span id="flag-label">Hold to flag</span><span class="key-hint">SHIFT</span></button></section>
+    <div class="center-controls"><button id="pump" class="pump-button">PUMP <span>SPACE</span></button><div class="energy"><span id="energy-fill"></span></div><span class="desktop-tip">PUMP IT. FIND YOUR FLIGHT.</span></div>
+    <section class="wing-control"><div class="control-heading"><span>WING TRIM</span><strong id="trim-value">38%</strong></div><div class="trim-scale"><span>← EASE OUT</span><span>SHEET IN →</span></div><div class="slider-wrap"><div id="sweet-spot" title="Efficient trim"></div><input id="trim" aria-label="Wing trim" aria-describedby="trim-feedback" type="range" min="0" max="100" step="0.1" value="38" /></div><div class="trim-feedback"><span class="sweet-dot"></span><span id="trim-feedback">Find the sweet spot</span><span class="key-hint">Q / E</span></div><button id="depower" class="depower-button" aria-pressed="false"><span id="flag-label">Hold to flag</span><span class="key-hint">SHIFT</span></button></section>
   </div>
   <footer><span>5.0 m² WING <i>·</i> <span id="foil-size-label">1800</span> cm² FOIL <i>·</i> 85 cm MAST</span><span id="mode-label">ASSISTED SIMULATION</span></footer>
-  <div id="overlay" class="overlay"><section class="modal intro"><div class="eyebrow">WELCOME TO OPEN WATER</div><h2>A little wind.<br>A whole new feeling.</h2><p>Catch the breeze, build board speed, and find the quiet balance of flying above the water.</p><div class="lesson-list"><div><span>01</span><p><strong>Catch the wind</strong>Adjust wing trim toward the green marker. The sweet spot moves as you accelerate.</p></div><div><span>02</span><p><strong>Find your balance</strong>Drag the round pad to steer. Drag down to shift weight back and rise; up to lower the nose.</p></div><div><span>03</span><p><strong>Stay in flight</strong>Keep the foil submerged. Pump for takeoff, ease the wing in gusts, and steer away from the wind to build speed.</p></div></div><div class="intro-note">Two thumbs to ride · Portrait or landscape</div><button id="start" class="primary-button">Let's ride ${icon('arrow')}</button></section></div>
-  <dialog id="settings-dialog"><form method="dialog"><div class="modal-heading"><div><div class="eyebrow">MAKE IT YOUR SESSION</div><h2>Wind & water</h2></div><button class="icon-button" aria-label="Close settings">${icon('close')}</button></div><div class="ride-actions"><button type="button" data-action="help">How to ride</button><button type="button" data-action="camera">Change camera</button><button type="button" data-action="wind-toggle" id="menu-wind" aria-pressed="true">Wind trails: on</button><button type="button" data-action="reset">Restart session</button></div><div class="menu-mission" id="menu-mission"></div><fieldset class="touch-settings"><legend>Touch controls</legend><label class="switch-label"><span>Swap thumb controls<small>Move the steering pad to your right hand.</small></span><input id="swap-controls" type="checkbox" /></label><label class="switch-label"><span>Tap to flag the wing<small>Tap again to power up. No need to keep holding.</small></span><input id="tap-flag" type="checkbox" /></label></fieldset><label>Wind strength <output id="setting-wind-value">18 knots</output><input id="setting-wind" type="range" min="6" max="30" value="18" /></label><label>Gust intensity <output id="setting-gusts-value">20%</output><input id="setting-gusts" type="range" min="0" max="60" value="20" /></label><label>Water texture <output id="setting-chop-value">Sheltered</output><input id="setting-chop" type="range" min="0" max="200" value="60" /></label><label>Wing size<select id="setting-wing"><option value="4">4.0 m² · stronger wind</option><option value="5" selected>5.0 m² · all-round</option><option value="6">6.0 m² · lighter wind</option></select></label><label>Front foil<select id="setting-foil"><option value=".12">1200 cm² · faster, later takeoff</option><option value=".18" selected>1800 cm² · early lift</option><option value=".22">2200 cm² · light wind</option></select></label><label class="switch-label"><span>Balance assistance<small>Helps hold a safe foil height. Wing trim stays manual.</small></span><input id="setting-assist" type="checkbox" checked /></label><p class="physics-note">A simplified force-based simulation: apparent wind, wing stall, hydrofoil lift and drag, buoyancy, and foil ventilation. Equipment coefficients are tuned for play; this is not a validated training model.</p><button class="primary-button">Back to the water ${icon('arrow')}</button></form></dialog>
+  <div id="overlay" class="overlay"><section class="modal intro"><div class="eyebrow">WELCOME TO SUNBREAK BAY</div><h2>Big blue.<br>Endless possibility.</h2><p>A sun-soaked playground of wind, water, and wide-open turns. Catch the breeze and fly above the blue.</p><div class="lesson-list"><div><span>01</span><p><strong>Catch the wind</strong>Sheet in (E / right) to pull the rear hand in and load the wing. Ease out (Q / left) to reduce its angle. Too far in stalls it; too far out makes it flutter.</p></div><div><span>02</span><p><strong>Find your balance</strong>Drag the round pad to steer. Drag down to shift weight back and rise; up to lower the nose.</p></div><div><span>03</span><p><strong>Stay in flight</strong>Follow the green trim band as the apparent wind shifts. Pump for takeoff; keep the foil underwater. Flag the wing to coast with minimal pull.</p></div></div><div class="intro-note">Two thumbs to ride · Portrait or landscape</div><button id="start" class="primary-button">Let's ride ${icon('arrow')}</button></section></div>
+  <dialog id="settings-dialog"><form method="dialog"><div class="modal-heading"><div><div class="eyebrow">MAKE IT YOUR SESSION</div><h2>Wind & water</h2></div><button class="icon-button" aria-label="Close settings">${icon('close')}</button></div><div class="ride-actions"><button type="button" data-action="help">How to ride</button><button type="button" data-action="camera">Change camera</button><button type="button" data-action="wind-toggle" id="menu-wind" aria-pressed="true">Wind trails: on</button><button type="button" data-action="reset">Restart session</button></div><div class="menu-mission" id="menu-mission"></div><fieldset class="touch-settings"><legend>Touch controls</legend><label class="switch-label"><span>Swap thumb controls<small>Move the steering pad to your right hand.</small></span><input id="swap-controls" type="checkbox" /></label><label class="switch-label"><span>Tap to flag the wing<small>Tap again to power up. No need to keep holding.</small></span><input id="tap-flag" type="checkbox" /></label></fieldset><label>Wind strength <output id="setting-wind-value">18 knots</output><input id="setting-wind" type="range" min="6" max="30" value="18" /></label><label>Gust intensity <output id="setting-gusts-value">20%</output><input id="setting-gusts" type="range" min="0" max="60" value="20" /></label><label>Waves <output id="setting-chop-value">Rolling swell</output><input id="setting-chop" type="range" min="0" max="200" value="60" /></label><label>Wing size<select id="setting-wing"><option value="4">4.0 m² · stronger wind</option><option value="5" selected>5.0 m² · all-round</option><option value="6">6.0 m² · lighter wind</option></select></label><label>Front foil<select id="setting-foil"><option value=".12">1200 cm² · faster, later takeoff</option><option value=".18" selected>1800 cm² · early lift</option><option value=".22">2200 cm² · light wind</option></select></label><label class="switch-label"><span>Balance assistance<small>Helps hold a safe foil height. Wing trim stays manual.</small></span><input id="setting-assist" type="checkbox" checked /></label><p class="physics-note">A simplified force-based simulation: apparent wind, wing stall, hydrofoil lift and drag, buoyancy, and foil ventilation. Equipment coefficients are tuned for play; this is not a validated training model.</p><button class="primary-button">Back to the water ${icon('arrow')}</button></form></dialog>
   <div id="pause-overlay" class="overlay hidden"><section class="modal pause-modal"><div class="eyebrow">TAKE A BREATH</div><h2>Out here, time slows.</h2><div id="session-stats"></div><button id="resume" class="primary-button">Keep riding ${icon('arrow')}</button></section></div>
   <div id="toast" role="status"></div>
 `;
@@ -121,10 +123,11 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && sta
 for (const name of ['wind', 'gusts', 'chop', 'wing', 'foil', 'assist']) {
   $('setting-' + name).addEventListener('input', e => {
     const value = name === 'assist' ? e.target.checked : Number(e.target.value) / (['gusts', 'chop'].includes(name) ? 100 : 1);
-    sim.settings[name] = value;
+    if (name === 'chop') { sim.setChop(value); sim.step(0, input); }
+    else sim.settings[name] = value;
     if (name === 'wind') $('setting-wind-value').value = `${value} knots`;
     if (name === 'gusts') $('setting-gusts-value').value = `${Math.round(value * 100)}%`;
-    if (name === 'chop') $('setting-chop-value').value = value < .8 ? 'Sheltered' : value < 1.5 ? 'Light chop' : 'Choppy';
+    if (name === 'chop') $('setting-chop-value').value = value === 0 ? 'Flat' : value < .4 ? 'Gentle swell' : value < 1.2 ? 'Rolling swell' : 'Rough seas';
     $('mode-label').textContent = sim.settings.assist ? 'ASSISTED SIMULATION' : 'MANUAL SIMULATION';
     document.querySelector('footer > span').innerHTML = `${sim.settings.wing.toFixed(1)} m² WING <i>·</i> ${Math.round(sim.settings.foil * 10000)} cm² FOIL <i>·</i> 85 cm MAST`;
   });
@@ -155,9 +158,9 @@ function updateUI() {
   $('speed-value').textContent = (t.speed * KNOTS).toFixed(1);
   $('wind-value').textContent = (t.wind * KNOTS).toFixed(1);
   $('apparent-value').textContent = (t.apparent * KNOTS).toFixed(1);
-  const trueAngle = Math.abs(wrap(sim.heading)) / rad;
+  const trueAngle = Math.abs(wrap(sim.heading + Math.atan2(t.wx, t.wz))) / rad;
   $('sail-value').textContent = trueAngle < 40 ? 'Into wind' : trueAngle < 70 ? 'Close reach' : trueAngle < 110 ? 'Beam reach' : trueAngle < 155 ? 'Broad reach' : 'Downwind';
-  document.querySelector('.wind-arrow').style.transform = `rotate(${180 - sim.heading / rad}deg)`;
+  document.querySelector('.wind-arrow').style.transform = `rotate(${180 - (sim.heading + Math.atan2(t.wx, t.wz)) / rad}deg)`;
   $('height-value').textContent = Math.max(0, Math.round(t.height * 100));
   $('flight-value').textContent = clockText(sim.flightTime);
   $('distance-value').textContent = Math.round(sim.distance);
@@ -165,30 +168,34 @@ function updateUI() {
   document.querySelector('.status').classList.toggle('warning', /STALL|BREACH|RECOVER/.test(t.status));
   $('trim-value').textContent = `${Math.round(input.trim * 100)}%`;
   $('trim').style.setProperty('--fill', `${input.trim * 100}%`);
-  $('sweet-spot').style.left = `${t.idealTrim * 100}%`;
-  const goodTrim = Math.abs(input.trim - t.idealTrim) < .055;
-  $('trim-feedback').textContent = input.depower ? 'Wing flagged · no lift' : goodTrim ? 'Clean airflow' : input.trim > t.idealTrim ? 'Ease out a little' : 'Sheet in a little';
-  document.querySelector('.sweet-dot').classList.toggle('good', goodTrim);
+  const feedback = trimFeedback(t);
+  // Native range thumbs have an inset at the endpoints. Match the target band
+  // to that travel so the efficient trim is centered under the actual thumb.
+  const thumb = parseFloat(getComputedStyle($('trim')).getPropertyValue('--thumb-size')) || 21;
+  const travel = $('trim').clientWidth - thumb;
+  $('sweet-spot').style.left = `${thumb / 2 + (t.trimMin + t.trimMax) / 2 * travel}px`;
+  $('sweet-spot').style.width = `${(t.trimMax - t.trimMin) * travel}px`;
+  $('sweet-spot').hidden = !feedback.showTarget;
+  $('trim-feedback').textContent = feedback.label;
+  $('trim').setAttribute('aria-valuetext', `${Math.round(input.trim * 100)} percent sheeted in. ${feedback.label}`);
+  document.querySelector('.wing-control').dataset.state = t.trimState;
+  document.querySelector('.sweet-dot').classList.toggle('good', feedback.good);
   $('foil-marker').style.left = `${clamp(t.height / .85 * 100, 0, 100)}%`;
   $('foil-load').textContent = `${Math.max(0, Math.round(t.height * 100))} cm`;
   $('energy-fill').style.width = `${sim.pumpEnergy * 100}%`;
   $('pump').disabled = sim.pumpEnergy < .24 || sim.pumpCooldown > 0;
-  let hint = 'Follow the green marker as the apparent wind moves.';
+  let hint = feedback.hint;
   if (t.status === 'RECOVERING') hint = 'Take a breath. Your board will settle beneath you.';
   else if (t.height > .72) hint = 'Foil near the surface. Weight forward to lower the board.';
   else if (t.status === 'FOIL STALL') hint = 'Nose too high. Weight forward to restore water flow.';
-  else if (t.status === 'WING STALL') hint = 'Wing stalled. Ease out to restore airflow.';
-  else if (trueAngle < 40) hint = 'Too close to the wind. Steer left or right to fill the wing.';
-  else if (t.status === 'WING LUFFING') hint = 'Wing luffing. Sheet in gently to catch the wind.';
-  else if (t.speed < 3) hint = 'Build speed on a reach. A well-timed pump helps takeoff.';
-  else if (t.height < .22) hint = 'Speed is building. Shift a little weight back to rise.';
-  else hint = 'You’re foiling. Small weight shifts keep the flight smooth.';
+  else if (feedback.good && t.speed < 3) hint = 'Clean airflow! Hold a reach and pump to help takeoff.';
+  else if (feedback.good && t.height < .22) hint = 'Speed is building. Shift a little weight back to rise.';
   $('coach-text').textContent = hint;
   $('objective-title').textContent = lesson < 3 ? 'YOUR FIRST FLIGHT' : `FREE RIDE / GATE ${gates + 1}`;
   $('objective-text').textContent = lesson === 0 ? 'Build speed & lift onto the foil' : lesson === 1 ? 'Shift weight back & find lift' : lesson === 2 ? `Hold your flight · ${Math.min(10, Math.floor(sim.currentFlight))} / 10 s` : `Pass between the orange buoys · ${Math.round(Math.hypot(gate.x - sim.x, gate.z - sim.z))} m`;
   $('objective-progress').textContent = lesson < 3 ? `${lesson} / 3` : `${gates} gates`;
   $('menu-mission').textContent = `${$('objective-title').textContent} · ${$('objective-text').textContent}`;
-  if (lesson === 3 && gate && t.status === 'FOILING') $('coach-text').textContent = `Next gate: ${Math.round(Math.hypot(gate.x - sim.x, gate.z - sim.z))} m · Aim between the orange buoys.`;
+  if (lesson === 3 && gate && t.status === 'FOILING' && feedback.good) $('coach-text').textContent = `Next gate: ${Math.round(Math.hypot(gate.x - sim.x, gate.z - sim.z))} m · Aim between the orange buoys.`;
 }
 sim.step(1 / 120, input); updateUI();
 function frame(now) {

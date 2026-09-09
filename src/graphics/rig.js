@@ -1,14 +1,15 @@
 import * as THREE from 'three';
-import { clamp } from '../physics.js';
+import { clamp, rad } from '../physics.js';
 import { ellipsoid, rod, tube, link, setLink, solveJoint } from './primitives.js';
 import { wingPose, smoothAngle } from './wing-pose.js';
+import { toon } from './toon.js';
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 export function createRig(scene) {
-  const material = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: .72, ...extra });
-  const ink = material('#152e3c'), suit = material('#28545d'), seam = material('#6b9290');
-  const coral = material('#ed7249'), sand = material('#f0e7cd'), skin = material('#c58b65');
-  const carbon = material('#132731', { roughness: .37, metalness: .3 });
+  const material = toon;
+  const ink = material('#112e59'), suit = material('#087cb1'), seam = material('#66e0dc');
+  const coral = material('#ff572b'), sand = material('#fff2bd'), skin = material('#db9a60');
+  const carbon = material('#132b49');
   const root = new THREE.Group(); scene.add(root);
   const board = new THREE.Group(); root.add(board);
 
@@ -40,7 +41,7 @@ export function createRig(scene) {
       }
     }
     const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3)); geo.setIndex(indices); geo.computeVertexNormals();
-    const mesh = new THREE.Mesh(geo, material('#182f38', { side: THREE.DoubleSide, metalness: .35, roughness: .33 })); board.add(mesh); return mesh;
+    const mesh = new THREE.Mesh(geo, material('#182f48', { side: THREE.DoubleSide })); board.add(mesh); return mesh;
   }
   const frontFoil = foilWing(1.12, .21, -.17); foilWing(.48, .13, .49);
 
@@ -104,7 +105,7 @@ export function createRig(scene) {
   }
   leading.geometry.computeVertexNormals();
   const positions = [], colors = [], indices = [], windowIndices = [];
-  const cream = new THREE.Color('#f4e6b7'), gold = new THREE.Color('#f1ad58'), orange = new THREE.Color('#e96842'), navy = new THREE.Color('#243d4a');
+  const cream = new THREE.Color('#fff4c5'), gold = new THREE.Color('#ffd02e'), orange = new THREE.Color('#ff572b'), navy = new THREE.Color('#133869');
   for (let i = 0; i <= sections; i++) for (let j = 0; j <= chordSteps; j++) {
     const u = i / sections * 2 - 1, v = j / chordSteps;
     positions.push(...canopyPoint(u, v));
@@ -118,9 +119,9 @@ export function createRig(scene) {
   }
   const canopyGeo = new THREE.BufferGeometry();
   canopyGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); canopyGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); canopyGeo.setIndex(indices); canopyGeo.computeVertexNormals();
-  wing.add(new THREE.Mesh(canopyGeo, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: .84 })));
+  wing.add(new THREE.Mesh(canopyGeo, toon('#ffffff', { vertexColors: true, side: THREE.DoubleSide })));
   const windowGeo = new THREE.BufferGeometry(); windowGeo.setAttribute('position', canopyGeo.attributes.position); windowGeo.setIndex(windowIndices); windowGeo.computeVertexNormals();
-  const windows = new THREE.Mesh(windowGeo, material('#8bb5b5', { transparent: true, opacity: .38, side: THREE.DoubleSide, depthWrite: false, roughness: .2, metalness: .15 }));
+  const windows = new THREE.Mesh(windowGeo, material('#8cdded', { transparent: true, opacity: .38, side: THREE.DoubleSide, depthWrite: false }));
   windows.renderOrder = 2; wing.add(windows);
   const seamPoints = [];
   for (const u of [-.84, -.65, -.43, -.2, .2, .43, .65, .84]) {
@@ -187,7 +188,7 @@ export function createRig(scene) {
         const distance = reachDelta.length();
         if (distance > .73) wing.position.addScaledVector(reachDelta, -((distance - .73) / (distance * coupling)));
       }
-      const flutter = (input.depower ? .045 : Math.abs(t.alpha || 0) > .37 || (t.alpha || 0) < .04 ? .026 : .004);
+      const flutter = (input.depower ? .045 : (t.alpha || 0) > 18 * rad || (t.alpha || 0) < 2 * rad ? .026 : .004);
       const pos = canopyGeo.attributes.position;
       for (let i = 0; i <= sections; i++) for (let j = 0; j <= chordSteps; j++) {
         const p = canopyPoint(i / sections * 2 - 1, j / chordSteps, sim.time, load, flutter);

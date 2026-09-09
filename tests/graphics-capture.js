@@ -13,8 +13,12 @@ for (const state of [
 ]) {
   await page.evaluate(s => {
     const { sim, input } = window.__drift;
-    sim.heading = s.heading; sim.vx = Math.sin(s.heading) * (s.speed || 0); sim.vz = -Math.cos(s.heading) * (s.speed || 0); sim.y = s.height || .05;
+    sim.reset(); sim.heading = s.heading;
+    // Build a settled flight rather than teleporting a stationary foil to speed
+    // with its high takeoff pitch still applied (which legitimately breaches).
+    if (s.speed) for (let i = 0; i < 2400; i++) sim.step(1 / 120, { trim: sim.telemetry.idealTrim ?? .38 });
     input.trim = s.trim; input.depower = s.depower;
+    document.querySelector('#trim').value = s.trim * 100;
   }, state);
   await page.waitForTimeout(1500);
   console.log(state.name, await page.evaluate(() => window.__drift.graphics()));

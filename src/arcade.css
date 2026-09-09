@@ -1,0 +1,73 @@
+/* Sunbreak Bay: nautical cream, racing orange, ink-blue edges. Layout lives in
+   style.css / mobile.css so the same thumb zones survive the visual treatment. */
+:root { --ink: #fff9df; --muted: #bfe9f5; --orange: #ffca48; --mint: #c4fa72; --panel: #073b6de8; color: var(--ink); }
+.vignette { background: linear-gradient(180deg, #053a724d, transparent 24%, transparent 54%, #052a5eab); }
+.brand { text-transform: uppercase; font-style: italic; font-weight: 800; letter-spacing: -2px; text-shadow: 2px 3px 0 #082d62; }
+.brand-mark { color: #ffcd43; text-shadow: 2px 2px 0 #082d62; }
+.brand-period { color: #ff7139; }
+.brand, .session-label h1, .speed > span:first-child, .wind-reading > span:first-child, .modal h2, dialog h2 { font-synthesis: style; }
+.location, .session-label { text-shadow: 1px 2px 0 #07366888; }
+.session-label h1 { font-weight: 800; font-style: italic; letter-spacing: -1.8px; }
+.session-label p { color: #e8fcff; }
+.eyebrow, .control-heading { font-weight: 800; color: #fff3c7; }
+.glass { background: var(--panel); backdrop-filter: none; border: 2px solid #a0e8f18a; border-radius: 5px 17px 5px 17px; box-shadow: 3px 4px 0 #052b5770; }
+.icon-button { background: #083c6bd9; border: 2px solid #b9ecf0a6; box-shadow: 2px 3px 0 #052b5766; backdrop-filter: none; }
+.icon-button:hover, .icon-button.active { background: #0e6599; border-color: #ffdc6c; }
+.objective { border-left: 5px solid #ffbd3c; }
+.objective .eyebrow { color: #ffda67; }
+.wind-reading > span:first-child { font-weight: 800; font-style: italic; }
+.wind-spark i { background: #60dcea; opacity: 1; }
+.speed > span:first-child { font-weight: 800; font-style: italic; text-shadow: 3px 4px 0 #073669; }
+.speed > span:last-child { font-weight: 800; text-transform: uppercase; color: #fff2c8; }
+.status { color: #deff9a; text-shadow: 1px 2px 0 #073669; font-weight: 800; }
+.metrics strong { font-weight: 800; }
+.metrics .eyebrow, .metrics small, .key-hint, .control-caption, .desktop-tip, footer { color: #cceefa; }
+.control-heading { text-shadow: 1px 2px 0 #073669; }
+.control-heading strong { color: #ffdb61; }
+.trim-scale, .trim-feedback { color: #f1f9ee; font-weight: 700; }
+#joystick { background: #063969ad; border: 2px solid #c9eff0aa; box-shadow: 3px 4px 0 #052b5755; }
+#stick { background: #ffcc49; border: 3px solid #fff5c1; box-shadow: 0 4px 0 #b86b22; }
+.pad-ring { border-color: #9cdce386; }
+.pad-label, .pad-left, .pad-right { color: #e2faff; }
+.pad-label.bottom { background: #063969; }
+.pump-button, .primary-button { background: #ffcb46; color: #123666; border: 2px solid #fff0a9; border-radius: 7px; box-shadow: 0 4px 0 #b96326; font-weight: 800; }
+.primary-button:hover { background: #ffdf76; }
+.energy { background: #052d5f; }
+.energy span { background: #c4fa72; }
+.depower-button { background: #083b6be6; border: 2px solid #b3e5ee88; color: #fff4d3; font-weight: 700; }
+.depower-button.held { background: #ffcb46; color: #123666; border-color: #fff0a9; }
+#trim { --thumb-size: 21px; }
+#trim::-webkit-slider-thumb { background: #fff6ce; border-color: #f9b83b; }
+#trim::-moz-range-thumb { width: 13px; height: 13px; background: #fff6ce; border-color: #f9b83b; }
+#sweet-spot { top: 1px; height: 28px; background: #a5fa6c88; border: 2px solid #d1ff85; border-radius: 2px; z-index: 0; }
+#sweet-spot:before { left: calc(50% - 3px); border-top-color: #d1ff85; }
+#sweet-spot[hidden] { display: none; }
+.sweet-dot { background: #ffbc56; }
+.sweet-dot.good { background: #c4fa72; }
+.wing-control[data-state="stalled"] .trim-feedback { color: #ffce82; }
+.wing-control[data-state="flagged"] .sweet-dot, .wing-control[data-state="heading"] .sweet-dot, .wing-control[data-state="calm"] .sweet-dot { background: #a6d6e5; }
+.coach { color: #fff9df; text-shadow: 1px 1px 0 #073669; }
+.coach-dot { background: #ffce49; }
+.modal, dialog { background: #073b67f7; border: 3px solid #a0dfe7; border-radius: 8px 24px 8px 24px; box-shadow: 6px 8px 0 #05265399; }
+.modal h2, dialog h2 { font-weight: 800; font-style: italic; color: #fff5cb; }
+.modal > p, .lesson-list p { color: #ceeaf2; }
+.lesson-list strong { color: #fff3cb; font-weight: 800; }
+.intro-note, .physics-note, .switch-label small { color: #b4dbe7; }
+.ride-actions button, dialog select, .menu-mission { background: #062d55; }
+#toast { background: #073b67f5; border: 2px solid #ffda66; color: #fff6ce; border-radius: 7px; font-weight: 700; }
+@media (max-width: 700px), (max-height: 570px) and (orientation: landscape), (pointer: coarse) and (max-width: 1100px) {
+  .vignette { background: linear-gradient(180deg, #06356b85, #06356b22 150px, transparent 220px, transparent 58%, #042754b8 85%, #042754e6); }
+  .wind-card { background: transparent; border: 0; box-shadow: none; }
+  .foil-monitor { background: #073b6dc9; }
+  .icon-button { background: #083c6bdd; border-color: #b9ecf0a6; }
+  .coach { background: #073b6ddb; border-left: 3px solid #ffce49; }
+  #trim { --thumb-size: 34px; }
+  #sweet-spot { top: 3px; height: 42px; }
+  #trim::-webkit-slider-runnable-track { background: linear-gradient(to right, #82d8f2 var(--fill, 38%), #1b5685 var(--fill, 38%)); }
+  #trim::-webkit-slider-thumb { border-color: #ffbe3b; background: #fff6ce; }
+  #trim::-moz-range-thumb { width: 28px; height: 28px; border-color: #ffbe3b; background: #fff6ce; }
+  #stick { background: #ffcc49; border-color: #fff5c1; }
+  #joystick { background: #063969ad; border-color: #c9eff0aa; }
+  .depower-button { background: #083b6be6; }
+  .depower-button.held { background: #ffcb46; }
+}
